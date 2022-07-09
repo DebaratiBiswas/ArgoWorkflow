@@ -1,0 +1,6 @@
+If you create any Workflow in your namespace then see them in argo dashboards
+
+template definitions: container,script, resourse, suspend
+
+template invocators: steps, DAG
+https://argoproj.github.io/argo-workflows/workflow-concepts/

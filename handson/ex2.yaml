@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+    generateName: wf-ex2-
+spec:
+    entryPoint: dag-template
+    templates:
+    - name: dag-template
+      dag:
+        tasks:
+        - name: get-source
+          template: get-source-template
+      
+    - name: get-source-template
+      script:
+        image: ubuntu:20.04
+        command: [sh]
+        source: |
+          apt-get update
+          apt-get install –y curl
+          mkdir source-file
+          cd source-file
+          curl &SOURCE_URL –o emails.csv
+          ls
+        env:
+        - name: SOURCE_URL
+          valueFrom: 
+            secretKeyRef:
+              name:
+              key:
+      outputs:
+        artifacts:
+        - name: emails
+          path: /source-file/emails.csv
+        
+          
+    - name: read-emails-template
+      inputs:
+        artifacts:
+        - name: text
+          path: /tmp/text
+      script:
+        image: python:3.8-slim
+        command: [python]
+        source: |
+          import json
+          import sys
+          with open("/tmp/text", "r") as f:
+           lines = f.readlines()
+           lines = [x.strip().split(";") for x in lines]
+           json.dump([{lines[0][0]: i[0].strip('"'), lines[0][1]: i[1]} for i in lines[1:]], sys.stdout)          
+      
+      
+    - name: loops-template
+      dag:
+      
+    - name: detect-template
+    
+    - name: email-detected-template
+      inputs:
+        parameters:
+        - name: sender
+        - name: text
+      script:
+        image: python:3.8-slim
+        command: [python]
+        source: |
+          with open("/secrets/notification_email", "r") as f:
+              notification_email = f.read()
+          print("Send notification email to ", notification_email, " with the content: ")
+          print("Sender: ", "{{inputs.parameters.sender}}}")
+          print("Text: ", "{{inputs.parameters.text}}}")
+          f = open("/tmp/email_detected.txt", "w")
+          f.write("Sender: {{inputs.parameters.sender}}")
+          f.write("Text: {{inputs.parameters.text}}")
+          f.close()
+        volumeMounts:
+        - name: 
+          mountPath:
+        outputs:
+          artifacts:
+          - name: email-detected
+            path: /tmp/email_detected.txt
+
+    
+
+    
